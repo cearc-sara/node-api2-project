@@ -1,38 +1,40 @@
 const express = require('express')
-const DB = require('./db')
+const DB = require('../data/db')
 
 const router = express.Router()
 
 router.get("/", (req, res) => {
     DB.find(req.query)
-    .then(db => {
-        res.status(200).json(db)
+    .then(posts => {
+        res.status(200).json({ data: posts })
     })
     .catch(error => {
         res.status(500).json({error: "The posts information could not be retrieved"})
     })
 })
 
-router.get("/:id", (req, res) => {
-    DB.findById(req.params.id)
-    .then(db => {
-        if(db) {
-            res.status(200).json(db)
+router.get("/:id", async (req, res) => {
+   try{
+       const posts = await DB.findById(req.params.id)
+       const post = posts[0]
+
+        if(post) {
+            res.status(200).json({ data: post })
         }else{
             res.status(404).json({ message: "The post with the specified ID does not exist."})
         }
-    })
-    .catch(err => {
+    
+    }catch(err) {
         console.log(err)
         res.status(500).json({ error: "The post information could not be retrieved"})
-    })
+    }
 })
 
 router.get("/:id/comments", (req, res) => {
-    DB.findById(req.params.id)
-    .then(db => {
-        if(db) {
-            res.status(200).json(db)
+    DB.findPostComments(req.params.id)
+    .then(comments => {
+        if(comments) {
+            res.status(200).json({ data: comments })
         }else{
             res.status(404).json({ message: "The post with the specified ID does not exist"})
         }
@@ -44,10 +46,10 @@ router.get("/:id/comments", (req, res) => {
 })
 
 router.post("/", (req, res) => {
-    DB.add(req.body)
-    .then(db => {
-       if(db) {
-        res.status(201).json(db)
+    DB.insert(req.body)
+    .then(post => {
+       if(post.title && post.contents) {
+        res.status(201).json({ data: post })
        } else{
            res.status(400).json({ errorMessage: "Please provide title and contents for the post."})
        }
@@ -59,11 +61,11 @@ router.post("/", (req, res) => {
 })
 
 router.post("/:id/comments", (req, res) => {
-    DB.findById(req.params.id)
-    DB.add(req.body)
-    .then(db => {
-        if(db) {
-            res.status(201).json(db)
+    DB.findCommentById(req.params.id)
+    DB.insertComment(req.body)
+    .then(comment => {
+        if(comment) {
+            res.status(201).json({ data: comment })
         }else{
             res.status(404).json({message: "The post with the specified ID does not exist."})
         }
